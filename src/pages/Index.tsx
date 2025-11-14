@@ -1,12 +1,14 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Account, Currency, NetWorthSummary, ConversionRate } from '@/types/finance';
 import { HistorySnapshot } from '@/types/history';
+import { RetirementInputs } from '@/types/retirement';
 import { NetWorthCard } from '@/components/NetWorthCard';
 import { AccountList } from '@/components/AccountList';
 import { AccountDialog } from '@/components/AccountDialog';
 import { ConversionRateDialog } from '@/components/ConversionRateDialog';
 import { FinancialCharts } from '@/components/FinancialCharts';
 import { RetirementCalculator } from '@/components/RetirementCalculator';
+import { RetirementPlanning } from '@/components/RetirementPlanning';
 import { HistoryLog } from '@/components/HistoryLog';
 import { ViewToggles } from '@/components/ViewToggles';
 import { Button } from '@/components/ui/button';
@@ -23,6 +25,10 @@ const Index = () => {
   );
   const [history, setHistory] = useLocalStorage<HistorySnapshot[]>('networth-history', []);
   const [monthlyExpenses, setMonthlyExpenses] = useLocalStorage<number>('networth-expenses', 0);
+  const [retirementInputs, setRetirementInputs] = useLocalStorage<RetirementInputs | undefined>(
+    'retirement-inputs',
+    undefined
+  );
   const [showCurrentAssets, setShowCurrentAssets] = useLocalStorage('show-current-assets', true);
   const [showNonCurrentAssets, setShowNonCurrentAssets] = useLocalStorage('show-non-current-assets', true);
   const [showCurrentLiabilities, setShowCurrentLiabilities] = useLocalStorage('show-current-liabilities', true);
@@ -259,6 +265,16 @@ const Index = () => {
             liquidNetWorthEUR={liquidNetWorth}
             monthlyExpenses={monthlyExpenses}
             onMonthlyExpensesChange={setMonthlyExpenses}
+          />
+        </div>
+
+        {/* Retirement Planning Module */}
+        <div className="mb-8">
+          <RetirementPlanning
+            liquidNetWorthEUR={liquidNetWorth}
+            monthlyExpenses={monthlyExpenses}
+            onInputsChange={setRetirementInputs}
+            savedInputs={retirementInputs}
           />
         </div>
 
