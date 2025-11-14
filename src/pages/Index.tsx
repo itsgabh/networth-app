@@ -1,21 +1,36 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Account, Currency, NetWorthSummary, ConversionRate } from '@/types/finance';
+import { HistorySnapshot } from '@/types/history';
 import { NetWorthCard } from '@/components/NetWorthCard';
 import { AccountList } from '@/components/AccountList';
 import { AccountDialog } from '@/components/AccountDialog';
 import { ConversionRateDialog } from '@/components/ConversionRateDialog';
 import { FinancialCharts } from '@/components/FinancialCharts';
+import { RetirementCalculator } from '@/components/RetirementCalculator';
+import { HistoryLog } from '@/components/HistoryLog';
+import { ViewToggles } from '@/components/ViewToggles';
 import { Button } from '@/components/ui/button';
-import { Plus, Wallet, RefreshCw } from 'lucide-react';
+import { Plus, Wallet, RefreshCw, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { defaultConversionRates } from '@/lib/currency';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 const Index = () => {
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accounts, setAccounts] = useLocalStorage<Account[]>('networth-accounts', []);
+  const [conversionRates, setConversionRates] = useLocalStorage<ConversionRate[]>(
+    'networth-rates',
+    defaultConversionRates
+  );
+  const [history, setHistory] = useLocalStorage<HistorySnapshot[]>('networth-history', []);
+  const [monthlyExpenses, setMonthlyExpenses] = useLocalStorage<number>('networth-expenses', 0);
+  const [showCurrentAssets, setShowCurrentAssets] = useLocalStorage('show-current-assets', true);
+  const [showNonCurrentAssets, setShowNonCurrentAssets] = useLocalStorage('show-non-current-assets', true);
+  const [showCurrentLiabilities, setShowCurrentLiabilities] = useLocalStorage('show-current-liabilities', true);
+  const [showNonCurrentLiabilities, setShowNonCurrentLiabilities] = useLocalStorage('show-non-current-liabilities', true);
+  
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [ratesDialogOpen, setRatesDialogOpen] = useState(false);
-  const [conversionRates, setConversionRates] = useState<ConversionRate[]>(defaultConversionRates);
   const { toast } = useToast();
 
   const summary: NetWorthSummary = useMemo(() => {
@@ -56,6 +71,23 @@ const Index = () => {
     result.netWorthEUR = result.totalAssetsEUR - result.totalLiabilitiesEUR;
 
     return result;
+  }, [accounts, conversionRates]);
+
+  const liquidNetWorth = useMemo(() => {
+    const getRateToEUR = (currency: Currency): number => {
+      const rate = conversionRates.find((r) => r.currency === currency);
+      return rate?.rate || 1;
+    };
+
+    const currentAssets = accounts
+      .filter((acc) => acc.category === 'current_asset')
+      .reduce((sum, acc) => sum + acc.balance * getRateToEUR(acc.currency), 0);
+
+    const currentLiabilities = accounts
+      .filter((acc) => acc.category === 'current_liability')
+      .reduce((sum, acc) => sum + acc.balance * getRateToEUR(acc.currency), 0);
+
+    return currentAssets - currentLiabilities;
   }, [accounts, conversionRates]);
 
   const handleSaveAccount = (accountData: Omit<Account, 'id' | 'lastUpdated'>) => {
@@ -114,6 +146,57 @@ const Index = () => {
     });
   };
 
+  const handleToggleView = (key: string, value: boolean) => {
+    switch (key) {
+      case 'showCurrentAssets':
+        setShowCurrentAssets(value);
+        break;
+      case 'showNonCurrentAssets':
+        setShowNonCurrentAssets(value);
+        break;
+      case 'showCurrentLiabilities':
+        setShowCurrentLiabilities(value);
+        break;
+      case 'showNonCurrentLiabilities':
+        setShowNonCurrentLiabilities(value);
+        break;
+    }
+  };
+
+  const saveSnapshot = () => {
+    const snapshot: HistorySnapshot = {
+      id: crypto.randomUUID(),
+      timestamp: new Date(),
+      netWorthEUR: summary.netWorthEUR,
+      totalAssetsEUR: summary.totalAssetsEUR,
+      totalLiabilitiesEUR: summary.totalLiabilitiesEUR,
+      liquidNetWorthEUR: liquidNetWorth,
+      accountCount: accounts.length,
+    };
+    setHistory([...history, snapshot]);
+    toast({
+      title: 'Snapshot saved',
+      description: 'Your current financial state has been recorded in history.',
+    });
+  };
+
+  // Auto-save snapshot when accounts change significantly
+  useEffect(() => {
+    if (accounts.length > 0 && history.length === 0) {
+      // Save first snapshot automatically
+      const snapshot: HistorySnapshot = {
+        id: crypto.randomUUID(),
+        timestamp: new Date(),
+        netWorthEUR: summary.netWorthEUR,
+        totalAssetsEUR: summary.totalAssetsEUR,
+        totalLiabilitiesEUR: summary.totalLiabilitiesEUR,
+        liquidNetWorthEUR: liquidNetWorth,
+        accountCount: accounts.length,
+      };
+      setHistory([snapshot]);
+    }
+  }, [accounts.length]);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -129,14 +212,24 @@ const Index = () => {
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => setRatesDialogOpen(true)}
-              className="gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Conversion Rates
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={saveSnapshot}
+                className="gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Save Snapshot
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setRatesDialogOpen(true)}
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Conversion Rates
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -149,8 +242,35 @@ const Index = () => {
           />
         </div>
 
+        {/* View Controls */}
+        <div className="mb-8">
+          <ViewToggles
+            showCurrentAssets={showCurrentAssets}
+            showNonCurrentAssets={showNonCurrentAssets}
+            showCurrentLiabilities={showCurrentLiabilities}
+            showNonCurrentLiabilities={showNonCurrentLiabilities}
+            onToggle={handleToggleView}
+          />
+        </div>
+
+        {/* Retirement Calculator */}
+        <div className="mb-8">
+          <RetirementCalculator
+            liquidNetWorthEUR={liquidNetWorth}
+            monthlyExpenses={monthlyExpenses}
+            onMonthlyExpensesChange={setMonthlyExpenses}
+          />
+        </div>
+
         {/* Visual Charts */}
         <FinancialCharts accounts={accounts} conversionRates={conversionRates} />
+
+        {/* History Log */}
+        {history.length > 0 && (
+          <div className="mt-8">
+            <HistoryLog snapshots={history} />
+          </div>
+        )}
 
         {/* Add Account Button */}
         <div className="mb-6">
@@ -166,34 +286,42 @@ const Index = () => {
             <div className="grid gap-6 lg:grid-cols-2">
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-foreground">Assets</h2>
-                <AccountList
-                  accounts={accounts}
-                  category="current_asset"
-                  onEdit={handleEditAccount}
-                  onDelete={handleDeleteAccount}
-                />
-                <AccountList
-                  accounts={accounts}
-                  category="non_current_asset"
-                  onEdit={handleEditAccount}
-                  onDelete={handleDeleteAccount}
-                />
+                {showCurrentAssets && (
+                  <AccountList
+                    accounts={accounts}
+                    category="current_asset"
+                    onEdit={handleEditAccount}
+                    onDelete={handleDeleteAccount}
+                  />
+                )}
+                {showNonCurrentAssets && (
+                  <AccountList
+                    accounts={accounts}
+                    category="non_current_asset"
+                    onEdit={handleEditAccount}
+                    onDelete={handleDeleteAccount}
+                  />
+                )}
               </div>
 
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-foreground">Liabilities</h2>
-                <AccountList
-                  accounts={accounts}
-                  category="current_liability"
-                  onEdit={handleEditAccount}
-                  onDelete={handleDeleteAccount}
-                />
-                <AccountList
-                  accounts={accounts}
-                  category="non_current_liability"
-                  onEdit={handleEditAccount}
-                  onDelete={handleDeleteAccount}
-                />
+                {showCurrentLiabilities && (
+                  <AccountList
+                    accounts={accounts}
+                    category="current_liability"
+                    onEdit={handleEditAccount}
+                    onDelete={handleDeleteAccount}
+                  />
+                )}
+                {showNonCurrentLiabilities && (
+                  <AccountList
+                    accounts={accounts}
+                    category="non_current_liability"
+                    onEdit={handleEditAccount}
+                    onDelete={handleDeleteAccount}
+                  />
+                )}
               </div>
             </div>
           </div>
