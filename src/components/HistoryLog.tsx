@@ -1,20 +1,47 @@
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { HistorySnapshot } from '@/types/history';
 import { formatCurrency } from '@/lib/currency';
-import { History, TrendingUp, TrendingDown, Trash2, TrashIcon } from 'lucide-react';
+import { History, TrendingUp, TrendingDown, Trash2, TrashIcon, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface HistoryLogProps {
   snapshots: HistorySnapshot[];
   onDelete: (id: string) => void;
+  onDuplicate: (snapshot: HistorySnapshot) => void;
   onClearAll: () => void;
 }
 
-export const HistoryLog = ({ snapshots, onDelete, onClearAll }: HistoryLogProps) => {
+export const HistoryLog = ({ snapshots, onDelete, onDuplicate, onClearAll }: HistoryLogProps) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [snapshotToDelete, setSnapshotToDelete] = useState<string | null>(null);
   const sortedSnapshots = [...snapshots].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
+
+  const handleDeleteClick = (id: string) => {
+    setSnapshotToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (snapshotToDelete) {
+      onDelete(snapshotToDelete);
+      setSnapshotToDelete(null);
+      setDeleteDialogOpen(false);
+    }
+  };
 
   if (snapshots.length === 0) {
     return null;
@@ -83,8 +110,18 @@ export const HistoryLog = ({ snapshots, onDelete, onClearAll }: HistoryLogProps)
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onDelete(snapshot.id)}
+                    onClick={() => onDuplicate(snapshot)}
                     className="h-8 w-8 p-0"
+                    title="Duplicate snapshot"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteClick(snapshot.id)}
+                    className="h-8 w-8 p-0"
+                    title="Delete snapshot"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -121,6 +158,21 @@ export const HistoryLog = ({ snapshots, onDelete, onClearAll }: HistoryLogProps)
           );
         })}
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Snapshot</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this snapshot? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
