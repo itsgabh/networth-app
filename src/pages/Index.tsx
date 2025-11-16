@@ -194,6 +194,19 @@ const Index = () => {
     });
   };
 
+  const duplicateSnapshot = (snapshot: HistorySnapshot) => {
+    const duplicated: HistorySnapshot = {
+      ...snapshot,
+      id: crypto.randomUUID(),
+      timestamp: new Date(),
+    };
+    setHistory((prev) => [...prev, duplicated]);
+    toast({
+      title: 'Snapshot duplicated',
+      description: 'A copy of this snapshot has been created.',
+    });
+  };
+
   const clearHistory = () => {
     setHistory(() => []);
     toast({
@@ -322,6 +335,7 @@ const Index = () => {
           <HistoryLog 
             snapshots={history}
             onDelete={deleteSnapshot}
+            onDuplicate={duplicateSnapshot}
             onClearAll={clearHistory}
           />
           </div>
