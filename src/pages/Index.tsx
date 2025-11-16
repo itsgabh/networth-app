@@ -85,15 +85,15 @@ const Index = () => {
   }, [accounts, conversionRates]);
 
   const liquidNetWorth = useMemo(() => {
-    const currentAssets = accounts
-      .filter((acc) => acc.category === 'current_asset')
+    const liquidAssets = accounts
+      .filter((acc) => acc.category.includes('asset') && (acc.accessType === 'liquid' || !acc.accessType))
       .reduce((sum, acc) => sum + acc.balance * getRateToEUR(acc.currency, conversionRates), 0);
 
-    const currentLiabilities = accounts
-      .filter((acc) => acc.category === 'current_liability')
+    const liquidLiabilities = accounts
+      .filter((acc) => acc.category.includes('liability') && (acc.accessType === 'liquid' || !acc.accessType))
       .reduce((sum, acc) => sum + acc.balance * getRateToEUR(acc.currency, conversionRates), 0);
 
-    return currentAssets - currentLiabilities;
+    return liquidAssets - liquidLiabilities;
   }, [accounts, conversionRates]);
 
   const handleSaveAccount = (accountData: Omit<Account, 'id' | 'lastUpdated'>) => {
@@ -276,6 +276,22 @@ const Index = () => {
             liabilitiesEUR={summary.totalLiabilitiesEUR}
             isMainCard={true}
           />
+          
+          {/* Liquid vs Total Net Worth */}
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-border bg-card p-4">
+              <p className="text-sm text-muted-foreground mb-1">Liquid Net Worth</p>
+              <p className={`text-2xl font-bold ${liquidNetWorth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {liquidNetWorth.toLocaleString('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <p className="text-sm text-muted-foreground mb-1">Total Net Worth</p>
+              <p className={`text-2xl font-bold ${summary.netWorthEUR >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {summary.netWorthEUR.toLocaleString('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Multi-Currency Net Worth Strip */}
