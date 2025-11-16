@@ -12,12 +12,15 @@ export type AccountCategory =
   | 'current_liability'
   | 'non_current_liability';
 
+export type AccessType = 'liquid' | 'retirement' | 'illiquid';
+
 export interface Account {
   id: string;
   name: string;
   category: AccountCategory;
   currency: Currency;
   balance: number;
+  accessType: AccessType;
   lastUpdated: Date;
 }
 

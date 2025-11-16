@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Account, AccountCategory, Currency } from '@/types/finance';
+import { Account, AccountCategory, Currency, AccessType } from '@/types/finance';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,7 @@ export const AccountDialog = ({
   const [category, setCategory] = useState<AccountCategory>('current_asset');
   const [currency, setCurrency] = useState<Currency>('EUR');
   const [balance, setBalance] = useState('0');
+  const [accessType, setAccessType] = useState<AccessType>('liquid');
 
   useEffect(() => {
     if (editAccount) {
@@ -42,11 +43,13 @@ export const AccountDialog = ({
       setCategory(editAccount.category);
       setCurrency(editAccount.currency);
       setBalance(editAccount.balance.toString());
+      setAccessType(editAccount.accessType || 'liquid');
     } else {
       setName('');
       setCategory('current_asset');
       setCurrency('EUR');
       setBalance('0');
+      setAccessType('liquid');
     }
   }, [editAccount, open]);
 
@@ -56,6 +59,7 @@ export const AccountDialog = ({
       category,
       currency,
       balance: parseFloat(balance) || 0,
+      accessType,
     });
     onOpenChange(false);
   };
@@ -122,6 +126,20 @@ export const AccountDialog = ({
               onChange={(e) => setBalance(e.target.value)}
               placeholder="0.00"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="accessType">Access Type</Label>
+            <Select value={accessType} onValueChange={(v) => setAccessType(v as AccessType)}>
+              <SelectTrigger id="accessType">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="liquid">Liquid</SelectItem>
+                <SelectItem value="retirement">Retirement</SelectItem>
+                <SelectItem value="illiquid">Illiquid</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
