@@ -86,24 +86,6 @@ export const FinancialCharts = ({ accounts, conversionRates }: FinancialChartsPr
     },
   ].filter(item => item.value > 0);
 
-  // Currency distribution
-  const currencyData = Object.entries(
-    accounts.reduce((acc, account) => {
-      const valueInEUR = account.balance * getRateToEUR(account.currency);
-      if (!acc[account.currency]) {
-        acc[account.currency] = 0;
-      }
-      acc[account.currency] += valueInEUR;
-      return acc;
-    }, {} as Record<string, number>)
-  )
-    .map(([currency, value]) => ({
-      name: currency,
-      value,
-    }))
-    .filter(item => item.value > 0)
-    .sort((a, b) => b.value - a.value);
-
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -179,32 +161,6 @@ export const FinancialCharts = ({ accounts, conversionRates }: FinancialChartsPr
           </BarChart>
         </ResponsiveContainer>
       </Card>
-
-      {/* Currency Distribution */}
-      {currencyData.length > 1 && (
-        <Card className="p-6 md:col-span-2">
-          <h3 className="text-lg font-semibold mb-4 text-foreground">
-            Currency Distribution (in EUR)
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={currencyData} layout="horizontal">
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                type="number"
-                tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
-              />
-              <YAxis 
-                type="category"
-                dataKey="name"
-                tick={{ fill: 'hsl(var(--muted-foreground))' }}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 8, 8, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-      )}
     </div>
   );
 };
