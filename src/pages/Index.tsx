@@ -442,18 +442,6 @@ const Index = () => {
         {/* Visual Charts */}
         <FinancialCharts accounts={accounts} conversionRates={conversionRates} />
 
-        {/* History Log */}
-        {history.length > 0 && (
-          <div className="mt-8">
-          <HistoryLog 
-            snapshots={history}
-            onDelete={deleteSnapshot}
-            onDuplicate={duplicateSnapshot}
-            onClearAll={clearHistory}
-          />
-          </div>
-        )}
-
         {/* Add Account Button */}
         <div className="mb-6">
           <Button onClick={handleAddNew} size="lg" className="gap-2">
@@ -520,6 +508,18 @@ const Index = () => {
               <Plus className="h-5 w-5" />
               Add Your First Account
             </Button>
+          </div>
+        )}
+
+        {/* History Log */}
+        {history.length > 0 && (
+          <div className="mt-8">
+          <HistoryLog 
+            snapshots={history}
+            onDelete={deleteSnapshot}
+            onDuplicate={duplicateSnapshot}
+            onClearAll={clearHistory}
+          />
           </div>
         )}
 
