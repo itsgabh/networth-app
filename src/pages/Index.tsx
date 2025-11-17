@@ -12,7 +12,7 @@ import { RetirementPlanning } from '@/components/RetirementPlanning';
 import { HistoryLog } from '@/components/HistoryLog';
 import { ViewToggles } from '@/components/ViewToggles';
 import { Button } from '@/components/ui/button';
-import { Plus, Wallet, RefreshCw, Save } from 'lucide-react';
+import { Plus, Wallet, RefreshCw, Save, Download, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { defaultConversionRates } from '@/lib/currency';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -215,6 +215,79 @@ const Index = () => {
     });
   };
 
+  const handleExportData = () => {
+    const backupData = {
+      accounts,
+      conversionRates,
+      history,
+      monthlyExpenses,
+      retirementInputs,
+      showCurrentAssets,
+      showNonCurrentAssets,
+      showCurrentLiabilities,
+      showNonCurrentLiabilities,
+      exportDate: new Date().toISOString(),
+    };
+
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `networth-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: 'Data exported',
+      description: 'Your backup file has been downloaded.',
+    });
+  };
+
+  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        
+        // Basic validation
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid backup file format');
+        }
+
+        // Restore data
+        if (data.accounts) setAccounts(data.accounts);
+        if (data.conversionRates) setConversionRates(data.conversionRates);
+        if (data.history) setHistory(data.history);
+        if (data.monthlyExpenses !== undefined) setMonthlyExpenses(data.monthlyExpenses);
+        if (data.retirementInputs !== undefined) setRetirementInputs(data.retirementInputs);
+        if (data.showCurrentAssets !== undefined) setShowCurrentAssets(data.showCurrentAssets);
+        if (data.showNonCurrentAssets !== undefined) setShowNonCurrentAssets(data.showNonCurrentAssets);
+        if (data.showCurrentLiabilities !== undefined) setShowCurrentLiabilities(data.showCurrentLiabilities);
+        if (data.showNonCurrentLiabilities !== undefined) setShowNonCurrentLiabilities(data.showNonCurrentLiabilities);
+
+        toast({
+          title: 'Data imported',
+          description: 'Your backup has been restored successfully.',
+        });
+
+        // Reset file input
+        event.target.value = '';
+      } catch (error) {
+        toast({
+          title: 'Import failed',
+          description: 'Unable to read backup file. Please check the file format.',
+          variant: 'destructive',
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
   // Auto-save snapshot when accounts change significantly
   useEffect(() => {
     if (accounts.length > 0 && history.length === 0) {
@@ -264,6 +337,40 @@ const Index = () => {
               >
                 <RefreshCw className="h-4 w-4" />
                 Conversion Rates
+              </Button>
+            </div>
+          </div>
+
+          {/* Backup & Restore Section */}
+          <div className="mt-4 rounded-lg border border-border bg-card p-4">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Backup & Restore</h3>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportData}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export Data
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 relative"
+                asChild
+              >
+                <label htmlFor="import-file" className="cursor-pointer">
+                  <Upload className="h-4 w-4" />
+                  Import Data
+                  <input
+                    id="import-file"
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportData}
+                    className="hidden"
+                  />
+                </label>
               </Button>
             </div>
           </div>
