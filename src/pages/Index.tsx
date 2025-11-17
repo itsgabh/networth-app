@@ -7,7 +7,6 @@ import { AccountList } from '@/components/AccountList';
 import { AccountDialog } from '@/components/AccountDialog';
 import { ConversionRateDialog } from '@/components/ConversionRateDialog';
 import { FinancialCharts } from '@/components/FinancialCharts';
-import { RetirementCalculator } from '@/components/RetirementCalculator';
 import { RetirementPlanning } from '@/components/RetirementPlanning';
 import { HistoryLog } from '@/components/HistoryLog';
 import { ViewToggles } from '@/components/ViewToggles';
@@ -427,15 +426,6 @@ const Index = () => {
             showCurrentLiabilities={showCurrentLiabilities}
             showNonCurrentLiabilities={showNonCurrentLiabilities}
             onToggle={handleToggleView}
-          />
-        </div>
-
-        {/* Retirement Calculator */}
-        <div className="mb-8">
-          <RetirementCalculator
-            liquidNetWorthEUR={liquidNetWorth}
-            monthlyExpenses={monthlyExpenses}
-            onMonthlyExpensesChange={setMonthlyExpenses}
           />
         </div>
 
