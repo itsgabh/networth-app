@@ -14,9 +14,7 @@ import {
   Coffee, 
   Leaf, 
   Crown, 
-  Briefcase, 
-  Heart,
-  Building2,
+  Briefcase,
   Calculator,
   CheckCircle2,
   XCircle,
@@ -76,18 +74,6 @@ const strategyConfig: Record<RetirementStrategy, {
     title: 'Barista FIRE',
     description: 'Semi-retirement with enjoyable part-time work',
     color: 'text-purple-600',
-  },
-  fine: {
-    icon: Heart,
-    title: 'FINE',
-    description: 'Financial Independence, Next Endeavor - pursue passion projects and meaningful work',
-    color: 'text-pink-600',
-  },
-  traditional: {
-    icon: Building2,
-    title: 'Traditional Retirement',
-    description: 'Standard retirement at traditional age with Social Security',
-    color: 'text-gray-600',
   },
 };
 

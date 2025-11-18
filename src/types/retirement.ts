@@ -3,9 +3,7 @@ export type RetirementStrategy =
   | 'coast_fire'
   | 'lean_fire'
   | 'fat_fire'
-  | 'barista_fire'
-  | 'fine'
-  | 'traditional';
+  | 'barista_fire';
 
 export interface RetirementInputs {
   currentAge: number;
