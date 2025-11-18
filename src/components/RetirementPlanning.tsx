@@ -24,9 +24,11 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Target
+  Target,
+  LineChart as LineChartIcon
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface RetirementPlanningProps {
@@ -114,6 +116,7 @@ export const RetirementPlanning = ({
 
   const [desiredMonthlySpending, setDesiredMonthlySpending] = useState<number>(monthlyExpenses || 3000);
   const [multiplier, setMultiplier] = useState<number>(25);
+  const [projectionMode, setProjectionMode] = useState<'all' | 'retirement'>('all');
 
   const [projections, setProjections] = useState<Record<RetirementStrategy, RetirementProjection> | null>(null);
   
@@ -146,6 +149,41 @@ export const RetirementPlanning = ({
       setSortDirection('asc');
     }
   };
+
+  // Calculate portfolio projection
+  const calculateProjection = () => {
+    const currentPortfolioValue = projectionMode === 'all' 
+      ? liquidAssetsEUR + retirementAssetsEUR 
+      : retirementAssetsEUR;
+    
+    const monthlyContribution = (inputs.annualIncome * inputs.savingsRate / 100) / 12;
+    const annualReturn = inputs.expectedReturn / 100;
+    const yearsToRetirement = Math.max(0, inputs.retirementAge - inputs.currentAge);
+    
+    const projectionData = [];
+    let portfolioValue = currentPortfolioValue;
+    
+    // Add current year
+    projectionData.push({
+      age: inputs.currentAge,
+      year: new Date().getFullYear(),
+      value: portfolioValue,
+    });
+    
+    // Calculate yearly projections
+    for (let i = 1; i <= yearsToRetirement; i++) {
+      portfolioValue = portfolioValue * (1 + annualReturn) + monthlyContribution * 12;
+      projectionData.push({
+        age: inputs.currentAge + i,
+        year: new Date().getFullYear() + i,
+        value: portfolioValue,
+      });
+    }
+    
+    return projectionData;
+  };
+
+  const projectionData = calculateProjection();
 
   const getSortedStrategies = (): RetirementStrategy[] => {
     if (!projections) return [];
@@ -324,6 +362,77 @@ export const RetirementPlanning = ({
             </p>
           </>
         )}
+      </Card>
+
+      {/* Portfolio Projection Chart */}
+      <Card className="p-4 mb-6 bg-muted/30">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <LineChartIcon className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold text-foreground">Portfolio Projection</h3>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={projectionMode === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setProjectionMode('all')}
+            >
+              Liquid + Retirement
+            </Button>
+            <Button
+              variant={projectionMode === 'retirement' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setProjectionMode('retirement')}
+            >
+              Retirement Only
+            </Button>
+          </div>
+        </div>
+
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart
+            data={projectionData}
+            margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis 
+              dataKey="age" 
+              stroke="hsl(var(--muted-foreground))"
+              tick={{ fontSize: 12 }}
+              label={{ value: 'Age', position: 'insideBottom', offset: -5, fill: 'hsl(var(--muted-foreground))' }}
+            />
+            <YAxis 
+              stroke="hsl(var(--muted-foreground))"
+              tick={{ fontSize: 12 }}
+              tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
+              label={{ value: 'Portfolio Value', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+              }}
+              formatter={(value: number) => [formatCurrency(value, 'EUR'), 'Portfolio Value']}
+              labelFormatter={(age) => `Age: ${age} (Year: ${projectionData.find(d => d.age === age)?.year})`}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="value" 
+              stroke="hsl(var(--primary))" 
+              strokeWidth={2}
+              dot={{ fill: 'hsl(var(--primary))', r: 3 }}
+              activeDot={{ r: 5 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+
+        <div className="mt-4 text-xs text-muted-foreground space-y-1">
+          <p>• Starting Portfolio: {formatCurrency(projectionData[0]?.value || 0, 'EUR')}</p>
+          <p>• Projected at Retirement (Age {inputs.retirementAge}): {formatCurrency(projectionData[projectionData.length - 1]?.value || 0, 'EUR')}</p>
+          <p>• Monthly Contribution: {formatCurrency((inputs.annualIncome * inputs.savingsRate / 100) / 12, 'EUR')}</p>
+          <p>• Expected Annual Return: {inputs.expectedReturn}%</p>
+        </div>
       </Card>
 
       <Tabs defaultValue="inputs" className="w-full">
