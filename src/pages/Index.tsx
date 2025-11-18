@@ -12,7 +12,8 @@ import { RetirementPlanning } from '@/components/RetirementPlanning';
 import { HistoryLog } from '@/components/HistoryLog';
 import { ViewToggles } from '@/components/ViewToggles';
 import { Button } from '@/components/ui/button';
-import { Plus, Wallet, RefreshCw, Save, Download, Upload } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, Wallet, RefreshCw, Save, Download, Upload, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { defaultConversionRates } from '@/lib/currency';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -111,6 +112,48 @@ const Index = () => {
     return accounts
       .filter((acc) => acc.category.includes('asset') && acc.accessType === 'retirement')
       .reduce((sum, acc) => sum + acc.balance * getRateToEUR(acc.currency, conversionRates), 0);
+  }, [accounts, conversionRates]);
+
+  // Validation warnings
+  const validationWarnings = useMemo(() => {
+    const warnings: Array<{ type: string; message: string; accountId?: string }> = [];
+
+    // Check for missing conversion rates
+    const usedCurrencies = Array.from(new Set(accounts.map(a => a.currency)));
+    usedCurrencies.forEach(currency => {
+      if (currency !== 'EUR') {
+        const hasRate = conversionRates.find(r => r.currency === currency);
+        if (!hasRate) {
+          warnings.push({
+            type: 'missing-rate',
+            message: `Missing conversion rate for ${currency}.`
+          });
+        }
+      }
+    });
+
+    // Check for invalid conversion rates
+    conversionRates.forEach(rate => {
+      if (rate.rate <= 0) {
+        warnings.push({
+          type: 'invalid-rate',
+          message: `Conversion rate for ${rate.currency} should be greater than 0.`
+        });
+      }
+    });
+
+    // Check for negative asset balances
+    accounts.forEach(account => {
+      if (account.category.includes('asset') && account.balance < 0) {
+        warnings.push({
+          type: 'negative-asset',
+          message: `"${account.name}" has a negative balance. Convert to liability?`,
+          accountId: account.id
+        });
+      }
+    });
+
+    return warnings;
   }, [accounts, conversionRates]);
 
   const handleSaveAccount = (accountData: Omit<Account, 'id' | 'lastUpdated'>) => {
@@ -518,6 +561,20 @@ const Index = () => {
             </div>
           </div>
         </div>
+
+        {/* Validation Warnings */}
+        {validationWarnings.length > 0 && (
+          <div className="mb-6 space-y-2">
+            {validationWarnings.map((warning, index) => (
+              <Alert key={index} variant="default" className="bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800">
+                <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                  {warning.message}
+                </AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        )}
 
         {/* Net Worth Summary Card */}
         <div className="mb-8">
