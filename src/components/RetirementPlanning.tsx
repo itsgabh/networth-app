@@ -25,10 +25,13 @@ import {
   ArrowUp,
   ArrowDown,
   Target,
-  LineChart as LineChartIcon
+  LineChart as LineChartIcon,
+  Sparkles,
+  RotateCcw
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface RetirementPlanningProps {
@@ -118,6 +121,11 @@ export const RetirementPlanning = ({
   const [multiplier, setMultiplier] = useState<number>(25);
   const [projectionMode, setProjectionMode] = useState<'all' | 'retirement'>('all');
 
+  // Scenario mode tracking
+  const [scenarioActive, setScenarioActive] = useState(false);
+  const [scenarioName, setScenarioName] = useState<string>('');
+  const [originalInputs, setOriginalInputs] = useState<RetirementInputs | null>(null);
+
   // FI target profiles
   const fiProfiles = [
     { name: 'Lean FI', desiredMonthlySpending: 2000, multiplier: 25, color: 'text-green-600' },
@@ -146,6 +154,40 @@ export const RetirementPlanning = ({
 
   const handleInputChange = (field: keyof RetirementInputs, value: number | string) => {
     setInputs(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Scenario handlers
+  const applyScenario = (name: string, modifications: Partial<RetirementInputs>) => {
+    if (!scenarioActive) {
+      setOriginalInputs({ ...inputs });
+    }
+    setInputs(prev => ({ ...prev, ...modifications }));
+    setScenarioActive(true);
+    setScenarioName(name);
+  };
+
+  const resetScenario = () => {
+    if (originalInputs) {
+      setInputs(originalInputs);
+    }
+    setScenarioActive(false);
+    setScenarioName('');
+    setOriginalInputs(null);
+  };
+
+  const applyExtraContribution = () => {
+    const currentMonthlyContribution = (inputs.annualIncome * inputs.savingsRate / 100) / 12;
+    const extraContributionAnnual = 200 * 12;
+    const newSavingsRate = ((currentMonthlyContribution + 200) * 12 / inputs.annualIncome) * 100;
+    applyScenario('+€200 Monthly Contribution', { savingsRate: newSavingsRate });
+  };
+
+  const applyReducedReturn = () => {
+    applyScenario('-1% Expected Return', { expectedReturn: inputs.expectedReturn - 1 });
+  };
+
+  const applyPauseContributions = () => {
+    applyScenario('Pause Contributions (12 months)', { savingsRate: 0 });
   };
 
   const handleSort = (column: SortColumn) => {
@@ -431,6 +473,65 @@ export const RetirementPlanning = ({
           <p>• Monthly Contribution: {formatCurrency((inputs.annualIncome * inputs.savingsRate / 100) / 12, 'EUR')}</p>
           <p>• Expected Annual Return: {inputs.expectedReturn}%</p>
         </div>
+      </Card>
+
+      {/* Scenario Analysis Section */}
+      {scenarioActive && (
+        <Alert className="mb-6 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800">
+          <Sparkles className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-yellow-800 dark:text-yellow-200">
+              <strong>Scenario Active:</strong> {scenarioName}
+            </span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={resetScenario}
+              className="ml-4 gap-1"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Reset
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="p-4 mb-6 bg-muted/30">
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-semibold text-foreground">What-If Scenarios</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={applyExtraContribution}
+            className="gap-2"
+          >
+            +€200 Monthly
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={applyReducedReturn}
+            className="gap-2"
+          >
+            -1% Return
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={applyPauseContributions}
+            className="gap-2"
+          >
+            Pause 12 Months
+          </Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground mt-3">
+          Test different scenarios without affecting your saved settings. Click a scenario to see its impact, then reset to restore original values.
+        </p>
       </Card>
 
       <Tabs defaultValue="inputs" className="w-full">
