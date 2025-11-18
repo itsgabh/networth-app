@@ -253,77 +253,6 @@ export const RetirementPlanning = ({
     );
   };
 
-  const renderProjectionCard = (strategy: RetirementStrategy, projection: RetirementProjection) => {
-    const config = strategyConfig[strategy];
-    const Icon = config.icon;
-    const isFeasible = projection.isFeasible;
-    const yearsRounded = Math.ceil(projection.yearsToTarget);
-
-    return (
-      <Card className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Icon className={`h-8 w-8 ${config.color}`} />
-            <div>
-              <h3 className="text-xl font-bold text-foreground">{config.title}</h3>
-              <p className="text-sm text-muted-foreground">{config.description}</p>
-            </div>
-          </div>
-          {isFeasible ? (
-            <CheckCircle2 className="h-6 w-6 text-green-600" />
-          ) : yearsRounded > 50 ? (
-            <AlertTriangle className="h-6 w-6 text-yellow-600" />
-          ) : (
-            <XCircle className="h-6 w-6 text-red-600" />
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="bg-muted/50 p-3 rounded-lg">
-            <p className="text-xs text-muted-foreground mb-1">Target Amount</p>
-            <p className="text-lg font-bold text-foreground">
-              {formatCurrency(projection.targetAmount, 'EUR')}
-            </p>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-lg">
-            <p className="text-xs text-muted-foreground mb-1">Years to Target</p>
-            <p className="text-lg font-bold text-primary">
-              {yearsRounded < 100 ? `${yearsRounded} years` : '100+ years'}
-            </p>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-lg">
-            <p className="text-xs text-muted-foreground mb-1">Retirement Age</p>
-            <p className="text-lg font-bold text-foreground">
-              {projection.retirementAge.toFixed(0)}
-            </p>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-lg">
-            <p className="text-xs text-muted-foreground mb-1">Monthly Investment</p>
-            <p className="text-lg font-bold text-foreground">
-              {formatCurrency(projection.monthlyInvestment, 'EUR')}
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-primary/10 p-4 rounded-lg mb-4">
-          <p className="text-sm font-semibold text-foreground mb-2">Annual Income Needed</p>
-          <p className="text-2xl font-bold text-primary">
-            {formatCurrency(projection.safeWithdrawalAmount, 'EUR')}
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          {projection.notes.map((note, index) => (
-            <div key={index} className="flex items-start gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-primary mt-2" />
-              <p className="text-sm text-muted-foreground flex-1">{note}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
-    );
-  };
-
   return (
     <Card className="p-6">
       <div className="flex items-center gap-3 mb-6">
@@ -677,32 +606,6 @@ export const RetirementPlanning = ({
                   })}
                 </TableBody>
               </Table>
-              
-              <div className="mt-6 space-y-4">
-                <h3 className="text-lg font-semibold text-foreground">Strategy Notes</h3>
-                {(Object.keys(strategyConfig) as RetirementStrategy[]).map((strategy) => {
-                  const projection = projections[strategy];
-                  const config = strategyConfig[strategy];
-                  const Icon = config.icon;
-
-                  return (
-                    <Card key={`notes-${strategy}`} className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Icon className={`h-5 w-5 ${config.color}`} />
-                        <h4 className="font-semibold text-foreground">{config.title}</h4>
-                      </div>
-                      <ul className="space-y-1 ml-7">
-                        {projection.notes.map((note, index) => (
-                          <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                            <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                            <span>{note}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </Card>
-                  );
-                })}
-              </div>
             </div>
           )}
         </TabsContent>
