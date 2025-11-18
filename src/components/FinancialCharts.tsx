@@ -118,8 +118,12 @@ export const FinancialCharts = ({ accounts, conversionRates }: FinancialChartsPr
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-              outerRadius={80}
+              label={({ name, percent }) => {
+                const isMobile = window.innerWidth < 640;
+                if (isMobile) return '';
+                return `${name}: ${(percent * 100).toFixed(0)}%`;
+              }}
+              outerRadius={window.innerWidth < 640 ? 60 : 80}
               fill="#8884d8"
               dataKey="value"
             >
@@ -128,6 +132,13 @@ export const FinancialCharts = ({ accounts, conversionRates }: FinancialChartsPr
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
+            <Legend 
+              verticalAlign="bottom" 
+              height={36}
+              formatter={(value, entry: any) => (
+                <span className="text-xs sm:text-sm text-foreground">{value}</span>
+              )}
+            />
           </PieChart>
         </ResponsiveContainer>
       </Card>
@@ -137,23 +148,21 @@ export const FinancialCharts = ({ accounts, conversionRates }: FinancialChartsPr
         <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-foreground">
           Category Breakdown
         </h3>
-        <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
-          <BarChart data={categoryData}>
+        <ResponsiveContainer width="100%" height={280} className="sm:h-[320px]">
+          <BarChart data={categoryData} margin={{ bottom: 60 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
               dataKey="name" 
-              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: window.innerWidth < 640 ? 9 : 11 }}
               angle={-45}
               textAnchor="end"
-              height={100}
-              fontSize={10}
-              className="sm:text-xs"
+              height={80}
+              interval={0}
             />
             <YAxis 
-              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: window.innerWidth < 640 ? 9 : 11 }}
               tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
-              fontSize={10}
-              className="sm:text-xs"
+              width={window.innerWidth < 640 ? 40 : 50}
             />
             <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="value" radius={[8, 8, 0, 0]}>
