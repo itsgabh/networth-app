@@ -96,6 +96,18 @@ const Index = () => {
     return liquidAssets - liquidLiabilities;
   }, [accounts, conversionRates]);
 
+  const liquidAssetsEUR = useMemo(() => {
+    return accounts
+      .filter((acc) => acc.category.includes('asset') && (acc.accessType === 'liquid' || !acc.accessType))
+      .reduce((sum, acc) => sum + acc.balance * getRateToEUR(acc.currency, conversionRates), 0);
+  }, [accounts, conversionRates]);
+
+  const retirementAssetsEUR = useMemo(() => {
+    return accounts
+      .filter((acc) => acc.category.includes('asset') && acc.accessType === 'retirement')
+      .reduce((sum, acc) => sum + acc.balance * getRateToEUR(acc.currency, conversionRates), 0);
+  }, [accounts, conversionRates]);
+
   const handleSaveAccount = (accountData: Omit<Account, 'id' | 'lastUpdated'>) => {
     if (editAccount) {
       setAccounts((prev) =>
@@ -483,6 +495,8 @@ const Index = () => {
         <div className="mb-8">
           <RetirementPlanning
             liquidNetWorthEUR={liquidNetWorth}
+            liquidAssetsEUR={liquidAssetsEUR}
+            retirementAssetsEUR={retirementAssetsEUR}
             monthlyExpenses={monthlyExpenses}
             onInputsChange={setRetirementInputs}
             savedInputs={retirementInputs}

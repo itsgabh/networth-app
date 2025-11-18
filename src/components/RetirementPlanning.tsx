@@ -23,12 +23,16 @@ import {
   AlertTriangle,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Target
 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface RetirementPlanningProps {
   liquidNetWorthEUR: number;
+  liquidAssetsEUR: number;
+  retirementAssetsEUR: number;
   monthlyExpenses: number;
   onInputsChange: (inputs: RetirementInputs) => void;
   savedInputs?: RetirementInputs;
@@ -86,6 +90,8 @@ const strategyConfig: Record<RetirementStrategy, {
 
 export const RetirementPlanning = ({ 
   liquidNetWorthEUR, 
+  liquidAssetsEUR,
+  retirementAssetsEUR,
   monthlyExpenses,
   onInputsChange,
   savedInputs,
@@ -105,6 +111,9 @@ export const RetirementPlanning = ({
     partTimeIncome: 1500,
     desiredLifestyle: 'moderate',
   });
+
+  const [desiredMonthlySpending, setDesiredMonthlySpending] = useState<number>(monthlyExpenses || 3000);
+  const [multiplier, setMultiplier] = useState<number>(25);
 
   const [projections, setProjections] = useState<Record<RetirementStrategy, RetirementProjection> | null>(null);
   
@@ -259,6 +268,63 @@ export const RetirementPlanning = ({
         <Calculator className="h-6 w-6 text-primary" />
         <h2 className="text-2xl font-bold text-foreground">Retirement Planning Module</h2>
       </div>
+
+      {/* FIRE Progress Section */}
+      <Card className="p-4 mb-6 bg-muted/30">
+        <div className="flex items-center gap-2 mb-4">
+          <Target className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-semibold text-foreground">FIRE Progress</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <Label>Desired Monthly Spending (EUR)</Label>
+            <Input
+              type="number"
+              value={desiredMonthlySpending}
+              onChange={(e) => setDesiredMonthlySpending(Number(e.target.value))}
+              min={0}
+            />
+          </div>
+          <div>
+            <Label>Multiplier (4% rule = 25)</Label>
+            <Input
+              type="number"
+              value={multiplier}
+              onChange={(e) => setMultiplier(Number(e.target.value))}
+              min={1}
+            />
+          </div>
+        </div>
+
+        {desiredMonthlySpending > 0 && multiplier > 0 && (
+          <>
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Your FIRE number:</span>
+                <span className="font-semibold text-foreground">
+                  {formatCurrency(desiredMonthlySpending * 12 * multiplier, 'EUR')}
+                </span>
+              </div>
+              <Progress 
+                value={Math.min(((liquidAssetsEUR + retirementAssetsEUR) / (desiredMonthlySpending * 12 * multiplier)) * 100, 100)} 
+                className="h-3"
+              />
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Progress:</span>
+                <span className="font-semibold text-primary">
+                  {(((liquidAssetsEUR + retirementAssetsEUR) / (desiredMonthlySpending * 12 * multiplier)) * 100).toFixed(1)}%
+                </span>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              You have reached <span className="font-semibold text-foreground">
+                {(((liquidAssetsEUR + retirementAssetsEUR) / (desiredMonthlySpending * 12 * multiplier)) * 100).toFixed(1)}%
+              </span> of your FIRE target.
+            </p>
+          </>
+        )}
+      </Card>
 
       <Tabs defaultValue="inputs" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
