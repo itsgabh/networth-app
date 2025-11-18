@@ -343,42 +343,46 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <Wallet className="h-8 w-8 text-primary" />
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Wallet className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
               <div>
-                <h1 className="text-4xl font-bold text-foreground">Net Worth Tracker</h1>
-                <p className="text-muted-foreground">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">Net Worth Tracker</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                   Track your financial position across multiple currencies
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={saveSnapshot}
                 disabled={accounts.length === 0}
-                className="gap-2"
+                className="gap-2 flex-1 sm:flex-initial"
               >
                 <Save className="h-4 w-4" />
-                Save Snapshot
+                <span className="hidden sm:inline">Save Snapshot</span>
+                <span className="sm:hidden">Save</span>
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => setRatesDialogOpen(true)}
-                className="gap-2"
+                className="gap-2 flex-1 sm:flex-initial"
               >
                 <RefreshCw className="h-4 w-4" />
-                Conversion Rates
+                <span className="hidden sm:inline">Conversion Rates</span>
+                <span className="sm:hidden">Rates</span>
               </Button>
             </div>
           </div>
 
           {/* Backup & Restore Section */}
-          <div className="mt-4 rounded-lg border border-border bg-card p-4">
+          <div className="mt-4 rounded-lg border border-border bg-card p-3 sm:p-4">
             <h3 className="text-sm font-semibold text-foreground mb-3">Backup & Restore</h3>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -430,16 +434,16 @@ const Index = () => {
           />
           
           {/* Liquid vs Total Net Worth */}
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-sm text-muted-foreground mb-1">Liquid Net Worth</p>
-              <p className={`text-2xl font-bold ${liquidNetWorth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+          <div className="mt-3 sm:mt-4 grid grid-cols-1 gap-2 sm:gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-border bg-card p-3 sm:p-4">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Liquid Net Worth</p>
+              <p className={`text-xl sm:text-2xl font-bold ${liquidNetWorth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 {liquidNetWorth.toLocaleString('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
               </p>
             </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-sm text-muted-foreground mb-1">Total Net Worth</p>
-              <p className={`text-2xl font-bold ${summary.netWorthEUR >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            <div className="rounded-lg border border-border bg-card p-3 sm:p-4">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Net Worth</p>
+              <p className={`text-xl sm:text-2xl font-bold ${summary.netWorthEUR >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 {summary.netWorthEUR.toLocaleString('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
               </p>
             </div>
@@ -448,13 +452,13 @@ const Index = () => {
 
         {/* Multi-Currency Net Worth Strip */}
         {accounts.length > 0 && (
-          <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="mb-6 sm:mb-8 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {Object.entries(summary.netWorth).map(([currency, amount]) => (
               amount !== 0 && (
-                <div key={currency} className="rounded-lg border border-border bg-card p-3">
-                  <div className="flex items-center justify-between">
+                <div key={currency} className="rounded-lg border border-border bg-card p-2.5 sm:p-3">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-medium text-muted-foreground">{currency}</span>
-                    <span className={`text-sm font-semibold ${amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    <span className={`text-xs sm:text-sm font-semibold truncate ${amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                       {amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </span>
                   </div>
@@ -489,19 +493,19 @@ const Index = () => {
         <FinancialCharts accounts={accounts} conversionRates={conversionRates} />
 
         {/* Add Account Button */}
-        <div className="mb-6">
-          <Button onClick={handleAddNew} size="lg" className="gap-2">
-            <Plus className="h-5 w-5" />
+        <div className="mb-4 sm:mb-6">
+          <Button onClick={handleAddNew} size="lg" className="gap-2 w-full sm:w-auto">
+            <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
             Add Account
           </Button>
         </div>
 
         {/* Account Lists */}
         {accounts.length > 0 ? (
-          <div className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-foreground">Assets</h2>
+          <div className="space-y-4 sm:space-y-6">
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+              <div className="space-y-4 sm:space-y-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground">Assets</h2>
                 {showCurrentAssets && (
                   <AccountList
                     accounts={accounts}
@@ -520,8 +524,8 @@ const Index = () => {
                 )}
               </div>
 
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-foreground">Liabilities</h2>
+              <div className="space-y-4 sm:space-y-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground">Liabilities</h2>
                 {showCurrentLiabilities && (
                   <AccountList
                     accounts={accounts}
@@ -542,16 +546,16 @@ const Index = () => {
             </div>
           </div>
         ) : (
-          <div className="text-center py-16">
-            <Wallet className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">
+          <div className="text-center py-12 sm:py-16">
+            <Wallet className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-2">
               No accounts yet
             </h3>
-            <p className="text-muted-foreground mb-6">
+            <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
               Start tracking your net worth by adding your first account
             </p>
-            <Button onClick={handleAddNew} size="lg" className="gap-2">
-              <Plus className="h-5 w-5" />
+            <Button onClick={handleAddNew} size="lg" className="gap-2 w-full sm:w-auto">
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
               Add Your First Account
             </Button>
           </div>

@@ -28,38 +28,38 @@ export const AccountList = ({ accounts, category, onEdit, onDelete }: AccountLis
         {getCategoryLabel(category)}
       </h3>
       
-      <ScrollArea className="h-[400px] pr-4">
-        <div className="space-y-3">
+      <ScrollArea className="h-[400px] pr-2 sm:pr-4">
+        <div className="space-y-2 sm:space-y-3">
           {filteredAccounts.map((account) => (
             <div
               key={account.id}
-              className="flex items-center justify-between p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors gap-3 sm:gap-4"
             >
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-1">
-                  <p className="font-medium text-foreground">{account.name}</p>
-                  <Badge variant="outline" className="text-xs">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
+                  <p className="font-medium text-foreground text-sm sm:text-base truncate">{account.name}</p>
+                  <Badge variant="outline" className="text-xs flex-shrink-0">
                     {account.currency}
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Updated: {new Date(account.lastUpdated).toLocaleDateString()}
                 </p>
               </div>
               
-              <div className="flex items-center gap-4">
-                <p className={`text-xl font-bold ${isAsset ? 'text-success' : 'text-destructive'}`}>
+              <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
+                <p className={`text-lg sm:text-xl font-bold ${isAsset ? 'text-success' : 'text-destructive'} flex-shrink-0`}>
                   {formatCurrency(account.balance, account.currency)}
                 </p>
                 
-                <div className="flex gap-2">
+                <div className="flex gap-1 sm:gap-2 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => onEdit(account)}
                     className="h-8 w-8"
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -67,7 +67,7 @@ export const AccountList = ({ accounts, category, onEdit, onDelete }: AccountLis
                     onClick={() => onDelete(account.id)}
                     className="h-8 w-8 text-destructive hover:text-destructive"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
               </div>

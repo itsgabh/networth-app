@@ -105,13 +105,13 @@ export const FinancialCharts = ({ accounts, conversionRates }: FinancialChartsPr
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 mb-8">
+    <div className="grid gap-4 sm:gap-6 md:grid-cols-2 mb-6 sm:mb-8">
       {/* Assets vs Liabilities */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4 text-foreground">
+      <Card className="p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-foreground">
           Assets vs Liabilities
         </h3>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
           <PieChart>
             <Pie
               data={assetLiabilityData}
@@ -119,7 +119,7 @@ export const FinancialCharts = ({ accounts, conversionRates }: FinancialChartsPr
               cy="50%"
               labelLine={false}
               label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-              outerRadius={100}
+              outerRadius={80}
               fill="#8884d8"
               dataKey="value"
             >
@@ -133,11 +133,11 @@ export const FinancialCharts = ({ accounts, conversionRates }: FinancialChartsPr
       </Card>
 
       {/* Category Breakdown */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4 text-foreground">
+      <Card className="p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-foreground">
           Category Breakdown
         </h3>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
           <BarChart data={categoryData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
@@ -146,11 +146,14 @@ export const FinancialCharts = ({ accounts, conversionRates }: FinancialChartsPr
               angle={-45}
               textAnchor="end"
               height={100}
-              fontSize={12}
+              fontSize={10}
+              className="sm:text-xs"
             />
             <YAxis 
               tick={{ fill: 'hsl(var(--muted-foreground))' }}
               tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`}
+              fontSize={10}
+              className="sm:text-xs"
             />
             <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="value" radius={[8, 8, 0, 0]}>
