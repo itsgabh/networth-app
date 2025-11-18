@@ -47,6 +47,7 @@ const Index = () => {
   const [importPreviewOpen, setImportPreviewOpen] = useState(false);
   const [importPreviewData, setImportPreviewData] = useState<any>(null);
   const [pendingImportData, setPendingImportData] = useState<any>(null);
+  const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const { toast } = useToast();
 
   const summary: NetWorthSummary = useMemo(() => {
@@ -410,6 +411,18 @@ const Index = () => {
     }
   }, [accounts.length]);
 
+  // Track last saved time when data changes
+  useEffect(() => {
+    setLastSavedTime(new Date());
+  }, [accounts, conversionRates, history]);
+
+  const formatLastSaved = () => {
+    if (!lastSavedTime) return null;
+    const hours = lastSavedTime.getHours().toString().padStart(2, '0');
+    const minutes = lastSavedTime.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -420,9 +433,19 @@ const Index = () => {
               <Wallet className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
               <div>
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">Net Worth Tracker</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                  Track your financial position across multiple currencies
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Track your financial position across multiple currencies
+                  </p>
+                  {lastSavedTime && (
+                    <>
+                      <span className="hidden sm:inline text-xs text-muted-foreground">·</span>
+                      <span className="text-xs text-muted-foreground hidden sm:inline">
+                        Last saved at {formatLastSaved()}
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
