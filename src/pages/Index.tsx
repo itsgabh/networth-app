@@ -42,6 +42,7 @@ const Index = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [ratesDialogOpen, setRatesDialogOpen] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
 
   const summary: NetWorthSummary = useMemo(() => {
@@ -244,10 +245,7 @@ const Index = () => {
     });
   };
 
-  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const processImportFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -273,9 +271,6 @@ const Index = () => {
           title: 'Data imported',
           description: 'Your backup has been restored successfully.',
         });
-
-        // Reset file input
-        event.target.value = '';
       } catch (error) {
         toast({
           title: 'Import failed',
@@ -285,6 +280,46 @@ const Index = () => {
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    processImportFile(file);
+    event.target.value = '';
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length === 0) return;
+
+    const file = files[0];
+    if (!file.name.endsWith('.json')) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload a JSON backup file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    processImportFile(file);
   };
 
   // Auto-save snapshot when accounts change significantly
@@ -353,24 +388,35 @@ const Index = () => {
                 <Download className="h-4 w-4" />
                 Export Data
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 relative"
-                asChild
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`relative rounded-md border-2 border-dashed transition-colors ${
+                  isDragOver
+                    ? 'border-primary bg-primary/5'
+                    : 'border-muted-foreground/25 hover:border-primary/50'
+                }`}
               >
-                <label htmlFor="import-file" className="cursor-pointer">
-                  <Upload className="h-4 w-4" />
-                  Import Data
-                  <input
-                    id="import-file"
-                    type="file"
-                    accept=".json"
-                    onChange={handleImportData}
-                    className="hidden"
-                  />
-                </label>
-              </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 relative border-none"
+                  asChild
+                >
+                  <label htmlFor="import-file" className="cursor-pointer">
+                    <Upload className="h-4 w-4" />
+                    {isDragOver ? 'Drop file here' : 'Import Data'}
+                    <input
+                      id="import-file"
+                      type="file"
+                      accept=".json"
+                      onChange={handleImportData}
+                      className="hidden"
+                    />
+                  </label>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
