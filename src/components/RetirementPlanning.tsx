@@ -24,12 +24,10 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Target,
   LineChart as LineChartIcon,
   Sparkles,
   RotateCcw
 } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -117,21 +115,12 @@ export const RetirementPlanning = ({
     desiredLifestyle: 'moderate',
   });
 
-  const [desiredMonthlySpending, setDesiredMonthlySpending] = useState<number>(monthlyExpenses || 3000);
-  const [multiplier, setMultiplier] = useState<number>(25);
   const [projectionMode, setProjectionMode] = useState<'all' | 'retirement'>('all');
 
   // Scenario mode tracking
   const [scenarioActive, setScenarioActive] = useState(false);
   const [scenarioName, setScenarioName] = useState<string>('');
   const [originalInputs, setOriginalInputs] = useState<RetirementInputs | null>(null);
-
-  // FI target profiles
-  const fiProfiles = [
-    { name: 'Lean FI', desiredMonthlySpending: 2000, multiplier: 25, color: 'text-green-600' },
-    { name: 'Comfort FI', desiredMonthlySpending: 3500, multiplier: 25, color: 'text-blue-600' },
-    { name: 'Rich FI', desiredMonthlySpending: 6000, multiplier: 25, color: 'text-purple-600' },
-  ];
 
   const [projections, setProjections] = useState<Record<RetirementStrategy, RetirementProjection> | null>(null);
   
@@ -355,54 +344,6 @@ export const RetirementPlanning = ({
         <Calculator className="h-6 w-6 text-primary" />
         <h2 className="text-2xl font-bold text-foreground">Retirement Planning Module</h2>
       </div>
-
-      {/* FIRE Progress Section */}
-      <Card className="p-4 mb-6 bg-muted/30">
-        <div className="flex items-center gap-2 mb-4">
-          <Target className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">FIRE Target Profiles</h3>
-        </div>
-
-        <div className="space-y-6">
-          {fiProfiles.map((profile) => {
-            const fireNumber = profile.desiredMonthlySpending * 12 * profile.multiplier;
-            const currentPortfolio = liquidAssetsEUR + retirementAssetsEUR;
-            const progressPercent = Math.min((currentPortfolio / fireNumber) * 100, 100);
-
-            return (
-              <div key={profile.name} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className={`font-semibold ${profile.color}`}>{profile.name}</h4>
-                    <p className="text-xs text-muted-foreground">
-                      {formatCurrency(profile.desiredMonthlySpending, 'EUR')}/month · Target: {formatCurrency(fireNumber, 'EUR')}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-foreground">
-                      {progressPercent.toFixed(1)}%
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatCurrency(currentPortfolio, 'EUR')}
-                    </p>
-                  </div>
-                </div>
-                <Progress value={progressPercent} className="h-2" />
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-          <p className="text-xs text-muted-foreground">
-            <strong>Lean FI:</strong> Minimal expenses, frugal lifestyle
-            <br />
-            <strong>Comfort FI:</strong> Moderate spending, balanced lifestyle
-            <br />
-            <strong>Rich FI:</strong> Generous budget, premium lifestyle
-          </p>
-        </div>
-      </Card>
 
       {/* Portfolio Projection Chart */}
       <Card className="p-4 mb-6 bg-muted/30">
