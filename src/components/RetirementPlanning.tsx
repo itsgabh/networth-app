@@ -134,33 +134,47 @@ export const RetirementPlanning = ({
     }
   };
 
-  // Calculate portfolio projection
+  // Calculate portfolio projection with three scenarios
   const calculateProjection = () => {
     const currentPortfolioValue = projectionMode === 'all' 
       ? liquidAssetsEUR + retirementAssetsEUR 
       : retirementAssetsEUR;
     
     const monthlyContribution = (inputs.annualIncome * inputs.savingsRate / 100) / 12;
-    const annualReturn = inputs.expectedReturn / 100;
     const yearsToRetirement = Math.max(0, inputs.retirementAge - inputs.currentAge);
     
-    const projectionData = [];
-    let portfolioValue = currentPortfolioValue;
+    // Define three return scenarios
+    const pessimisticReturn = 0.04; // 4%
+    const realisticReturn = inputs.expectedReturn / 100; // User's input (default 7%)
+    const optimisticReturn = 0.10; // 10%
     
-    // Add current year
+    const projectionData = [];
+    
+    // Add current year (all scenarios start at the same value)
     projectionData.push({
       age: inputs.currentAge,
       year: new Date().getFullYear(),
-      value: portfolioValue,
+      pessimistic: currentPortfolioValue,
+      realistic: currentPortfolioValue,
+      optimistic: currentPortfolioValue,
     });
     
-    // Calculate yearly projections
+    // Calculate yearly projections for each scenario
+    let pessimisticValue = currentPortfolioValue;
+    let realisticValue = currentPortfolioValue;
+    let optimisticValue = currentPortfolioValue;
+    
     for (let i = 1; i <= yearsToRetirement; i++) {
-      portfolioValue = portfolioValue * (1 + annualReturn) + monthlyContribution * 12;
+      pessimisticValue = pessimisticValue * (1 + pessimisticReturn) + monthlyContribution * 12;
+      realisticValue = realisticValue * (1 + realisticReturn) + monthlyContribution * 12;
+      optimisticValue = optimisticValue * (1 + optimisticReturn) + monthlyContribution * 12;
+      
       projectionData.push({
         age: inputs.currentAge + i,
         year: new Date().getFullYear() + i,
-        value: portfolioValue,
+        pessimistic: pessimisticValue,
+        realistic: realisticValue,
+        optimistic: optimisticValue,
       });
     }
     
@@ -222,6 +236,17 @@ export const RetirementPlanning = ({
 
       {/* Portfolio Projection Chart */}
       <Card className="p-4 mb-6 bg-muted/30">
+        <Alert className="mb-4">
+          <AlertDescription className="text-sm">
+            <strong>Three scenarios based on your portfolio mix</strong> (All World, S&P 500, NASDAQ, Philippine equity):
+            <ul className="mt-2 ml-4 space-y-1 list-disc text-xs">
+              <li><strong>Pessimistic (4%):</strong> Economic downturns, bear markets</li>
+              <li><strong>Realistic ({inputs.expectedReturn}%):</strong> Conservative balanced long-term expectation</li>
+              <li><strong>Optimistic (10%):</strong> Strong economic growth, bull markets</li>
+            </ul>
+          </AlertDescription>
+        </Alert>
+
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <LineChartIcon className="h-5 w-5 text-primary" />
@@ -269,25 +294,100 @@ export const RetirementPlanning = ({
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px',
               }}
-              formatter={(value: number) => [formatCurrency(value, 'EUR'), 'Portfolio Value']}
+              formatter={(value: number, name: string) => [
+                formatCurrency(value, 'EUR'), 
+                name === 'pessimistic' ? 'Pessimistic (4%)' :
+                name === 'realistic' ? `Realistic (${inputs.expectedReturn}%)` : 
+                'Optimistic (10%)'
+              ]}
               labelFormatter={(age) => `Age: ${age} (Year: ${projectionData.find(d => d.age === age)?.year})`}
             />
+            <Legend 
+              verticalAlign="top"
+              height={36}
+              formatter={(value) => 
+                value === 'pessimistic' ? 'Pessimistic (4%)' :
+                value === 'realistic' ? `Realistic (${inputs.expectedReturn}%)` : 
+                'Optimistic (10%)'
+              }
+            />
+            
+            {/* Pessimistic line - red/orange */}
             <Line 
               type="monotone" 
-              dataKey="value" 
-              stroke="hsl(var(--primary))" 
+              dataKey="pessimistic" 
+              stroke="#ef4444" 
               strokeWidth={2}
+              strokeDasharray="5 5"
+              dot={false}
+              name="pessimistic"
+            />
+            
+            {/* Realistic line - primary color (main focus) */}
+            <Line 
+              type="monotone" 
+              dataKey="realistic" 
+              stroke="hsl(var(--primary))" 
+              strokeWidth={3}
               dot={{ fill: 'hsl(var(--primary))', r: 3 }}
               activeDot={{ r: 5 }}
+              name="realistic"
+            />
+            
+            {/* Optimistic line - green */}
+            <Line 
+              type="monotone" 
+              dataKey="optimistic" 
+              stroke="#22c55e" 
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              dot={false}
+              name="optimistic"
             />
           </LineChart>
         </ResponsiveContainer>
 
-        <div className="mt-4 text-xs text-muted-foreground space-y-1">
-          <p>• Starting Portfolio: {formatCurrency(projectionData[0]?.value || 0, 'EUR')}</p>
-          <p>• Projected at Retirement (Age {inputs.retirementAge}): {formatCurrency(projectionData[projectionData.length - 1]?.value || 0, 'EUR')}</p>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Pessimistic Scenario */}
+          <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <span className="font-semibold text-red-900 dark:text-red-100 text-sm">Pessimistic (4%)</span>
+            </div>
+            <p className="text-red-700 dark:text-red-300 text-xs font-medium">
+              At Retirement: {formatCurrency(projectionData[projectionData.length - 1]?.pessimistic || 0, 'EUR')}
+            </p>
+            <p className="text-red-600 dark:text-red-400 text-xs mt-1">Bear market conditions</p>
+          </div>
+          
+          {/* Realistic Scenario */}
+          <div className="p-3 bg-primary/10 border border-primary/30 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <span className="font-semibold text-foreground text-sm">Realistic ({inputs.expectedReturn}%)</span>
+            </div>
+            <p className="text-foreground text-xs font-medium">
+              At Retirement: {formatCurrency(projectionData[projectionData.length - 1]?.realistic || 0, 'EUR')}
+            </p>
+            <p className="text-muted-foreground text-xs mt-1">Conservative long-term average</p>
+          </div>
+          
+          {/* Optimistic Scenario */}
+          <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="h-4 w-4 text-green-600" />
+              <span className="font-semibold text-green-900 dark:text-green-100 text-sm">Optimistic (10%)</span>
+            </div>
+            <p className="text-green-700 dark:text-green-300 text-xs font-medium">
+              At Retirement: {formatCurrency(projectionData[projectionData.length - 1]?.optimistic || 0, 'EUR')}
+            </p>
+            <p className="text-green-600 dark:text-green-400 text-xs mt-1">Strong bull market conditions</p>
+          </div>
+        </div>
+        
+        <div className="mt-3 text-xs text-muted-foreground space-y-1">
+          <p>• Starting Portfolio: {formatCurrency(projectionData[0]?.realistic || 0, 'EUR')}</p>
           <p>• Monthly Contribution: {formatCurrency((inputs.annualIncome * inputs.savingsRate / 100) / 12, 'EUR')}</p>
-          <p>• Expected Annual Return: {inputs.expectedReturn}%</p>
         </div>
       </Card>
 
