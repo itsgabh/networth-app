@@ -101,6 +101,8 @@ export const RetirementPlanning = ({
   });
 
   const [projectionMode, setProjectionMode] = useState<'all' | 'retirement'>('all');
+  const [pessimisticRate, setPessimisticRate] = useState(4);
+  const [optimisticRate, setOptimisticRate] = useState(10);
 
   const [projections, setProjections] = useState<Record<RetirementStrategy, RetirementProjection> | null>(null);
   
@@ -144,9 +146,9 @@ export const RetirementPlanning = ({
     const yearsToRetirement = Math.max(0, inputs.retirementAge - inputs.currentAge);
     
     // Define three return scenarios
-    const pessimisticReturn = 0.04; // 4%
-    const realisticReturn = inputs.expectedReturn / 100; // User's input (default 7%)
-    const optimisticReturn = 0.10; // 10%
+    const pessimisticReturn = pessimisticRate / 100;
+    const realisticReturn = inputs.expectedReturn / 100;
+    const optimisticReturn = optimisticRate / 100;
     
     const projectionData = [];
     
@@ -240,9 +242,9 @@ export const RetirementPlanning = ({
           <AlertDescription className="text-sm">
             <strong>Three scenarios based on your portfolio mix</strong> (All World, S&P 500, NASDAQ, Philippine equity):
             <ul className="mt-2 ml-4 space-y-1 list-disc text-xs">
-              <li><strong>Pessimistic (4%):</strong> Economic downturns, bear markets</li>
+              <li><strong>Pessimistic ({pessimisticRate}%):</strong> Economic downturns, bear markets</li>
               <li><strong>Realistic ({inputs.expectedReturn}%):</strong> Conservative balanced long-term expectation</li>
-              <li><strong>Optimistic (10%):</strong> Strong economic growth, bull markets</li>
+              <li><strong>Optimistic ({optimisticRate}%):</strong> Strong economic growth, bull markets</li>
             </ul>
           </AlertDescription>
         </Alert>
@@ -296,9 +298,9 @@ export const RetirementPlanning = ({
               }}
               formatter={(value: number, name: string) => [
                 formatCurrency(value, 'EUR'), 
-                name === 'pessimistic' ? 'Pessimistic (4%)' :
+                name === 'pessimistic' ? `Pessimistic (${pessimisticRate}%)` :
                 name === 'realistic' ? `Realistic (${inputs.expectedReturn}%)` : 
-                'Optimistic (10%)'
+                `Optimistic (${optimisticRate}%)`
               ]}
               labelFormatter={(age) => `Age: ${age} (Year: ${projectionData.find(d => d.age === age)?.year})`}
             />
@@ -306,9 +308,9 @@ export const RetirementPlanning = ({
               verticalAlign="top"
               height={36}
               formatter={(value) => 
-                value === 'pessimistic' ? 'Pessimistic (4%)' :
+                value === 'pessimistic' ? `Pessimistic (${pessimisticRate}%)` :
                 value === 'realistic' ? `Realistic (${inputs.expectedReturn}%)` : 
-                'Optimistic (10%)'
+                `Optimistic (${optimisticRate}%)`
               }
             />
             
@@ -352,7 +354,7 @@ export const RetirementPlanning = ({
           <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="h-4 w-4 text-red-600" />
-              <span className="font-semibold text-red-900 dark:text-red-100 text-sm">Pessimistic (4%)</span>
+              <span className="font-semibold text-red-900 dark:text-red-100 text-sm">Pessimistic ({pessimisticRate}%)</span>
             </div>
             <p className="text-red-700 dark:text-red-300 text-xs font-medium">
               At Retirement: {formatCurrency(projectionData[projectionData.length - 1]?.pessimistic || 0, 'EUR')}
@@ -376,7 +378,7 @@ export const RetirementPlanning = ({
           <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-4 w-4 text-green-600" />
-              <span className="font-semibold text-green-900 dark:text-green-100 text-sm">Optimistic (10%)</span>
+              <span className="font-semibold text-green-900 dark:text-green-100 text-sm">Optimistic ({optimisticRate}%)</span>
             </div>
             <p className="text-green-700 dark:text-green-300 text-xs font-medium">
               At Retirement: {formatCurrency(projectionData[projectionData.length - 1]?.optimistic || 0, 'EUR')}
@@ -452,6 +454,18 @@ export const RetirementPlanning = ({
               />
             </div>
             <div>
+              <Label>Pessimistic Return (%)</Label>
+              <Input
+                type="number"
+                value={pessimisticRate}
+                onChange={(e) => setPessimisticRate(Number(e.target.value))}
+                step="0.5"
+                min="0"
+                max="15"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Bear market scenario</p>
+            </div>
+            <div>
               <Label>Expected Return (%)</Label>
               <Input
                 type="number"
@@ -459,6 +473,19 @@ export const RetirementPlanning = ({
                 onChange={(e) => handleInputChange('expectedReturn', Number(e.target.value))}
                 step="0.1"
               />
+              <p className="text-xs text-muted-foreground mt-1">Realistic scenario</p>
+            </div>
+            <div>
+              <Label>Optimistic Return (%)</Label>
+              <Input
+                type="number"
+                value={optimisticRate}
+                onChange={(e) => setOptimisticRate(Number(e.target.value))}
+                step="0.5"
+                min="0"
+                max="20"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Bull market scenario</p>
             </div>
             <div>
               <Label>Inflation Rate (%)</Label>
