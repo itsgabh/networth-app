@@ -233,7 +233,7 @@ export const RetirementPlanning = ({
               size="sm"
               onClick={() => setProjectionMode('all')}
             >
-              Liquid + Retirement
+              Total Portfolio
             </Button>
             <Button
               variant={projectionMode === 'retirement' ? 'default' : 'outline'}
