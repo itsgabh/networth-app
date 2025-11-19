@@ -85,7 +85,7 @@ export const AccountList = ({
                 {categoryIndex > 0 && <Separator className="mb-6" />}
                 
                 <Collapsible open={isOpen} onOpenChange={() => toggleCategory(category)}>
-                  <div className="mb-4">
+                  <div className="mb-6">
                     <CollapsibleTrigger asChild>
                       <Button
                         variant="ghost"
