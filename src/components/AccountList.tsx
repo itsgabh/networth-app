@@ -89,7 +89,7 @@ export const AccountList = ({
                     <CollapsibleTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="w-full flex items-start justify-between p-2 -ml-2 hover:bg-muted/50 rounded-lg group"
+                        className="w-full flex items-start justify-between px-1.5 py-2 hover:bg-muted/50 rounded-lg group"
                       >
                         <div className="flex items-start gap-2 flex-1">
                           <Icon className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
@@ -116,7 +116,7 @@ export const AccountList = ({
                     </CollapsibleTrigger>
                   </div>
 
-                  <CollapsibleContent className="animate-accordion-down">
+                  <CollapsibleContent className="mt-2 animate-accordion-down">
                     <div className="space-y-2 sm:space-y-3">
                       {categoryAccounts.map((account) => (
                         <div
