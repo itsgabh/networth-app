@@ -85,31 +85,34 @@ export const AccountList = ({
                 {categoryIndex > 0 && <Separator className="mb-6" />}
                 
                 <Collapsible open={isOpen} onOpenChange={() => toggleCategory(category)}>
-                  <div className="mb-4">
-                    <CollapsibleTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="w-full flex items-start justify-between p-2 -ml-2 hover:bg-muted/50 rounded-lg group"
-                      >
-                        <div className="flex items-start gap-2 flex-1">
-                          <Icon className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                          <div className="text-left flex-1">
-                            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full flex items-start justify-between p-2 -ml-2 hover:bg-muted/50 rounded-lg group"
+                    >
+                      <div className="flex items-start gap-2 flex-1">
+                        <Icon className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                        <div className="text-left flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold text-foreground">
                               {meta.label}
                             </h3>
-                            <p className="text-sm text-muted-foreground">
-                              {meta.subtitle}
-                            </p>
+                            <Badge variant="secondary" className="text-xs">
+                              {categoryAccounts.length}
+                            </Badge>
                           </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {meta.subtitle}
+                          </p>
                         </div>
-                        {isOpen ? (
-                          <ChevronUp className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0 mt-0.5" />
-                        ) : (
-                          <ChevronDown className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0 mt-0.5" />
-                        )}
-                      </Button>
-                    </CollapsibleTrigger>
-                  </div>
+                      </div>
+                      {isOpen ? (
+                        <ChevronUp className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0 mt-0.5" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0 mt-0.5" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
 
                   <CollapsibleContent className="animate-accordion-down">
                     <div className="space-y-2 sm:space-y-3">
