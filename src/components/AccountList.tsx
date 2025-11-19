@@ -102,7 +102,7 @@ export const AccountList = ({
                                 {categoryAccounts.length}
                               </Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-1">
+                            <p className="text-sm text-muted-foreground mt-1 mb-3">
                               {meta.subtitle}
                             </p>
                           </div>
