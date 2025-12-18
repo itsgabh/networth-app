@@ -734,12 +734,25 @@ const Index = () => {
 
         {/* Net Worth Summary Card */}
         <div className="mb-8">
-          <NetWorthCard
-            assetsEUR={convertFromEURTo(summary.totalAssetsEUR, displayCurrency, conversionRates)}
-            liabilitiesEUR={convertFromEURTo(summary.totalLiabilitiesEUR, displayCurrency, conversionRates)}
-            isMainCard={true}
-            displayCurrency={displayCurrency}
-          />
+          {(() => {
+            // Get the most recent snapshot for comparison
+            const sortedHistory = [...history].sort((a, b) => 
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            );
+            const previousSnapshot = sortedHistory[0];
+            
+            return (
+              <NetWorthCard
+                assetsEUR={convertFromEURTo(summary.totalAssetsEUR, displayCurrency, conversionRates)}
+                liabilitiesEUR={convertFromEURTo(summary.totalLiabilitiesEUR, displayCurrency, conversionRates)}
+                isMainCard={true}
+                displayCurrency={displayCurrency}
+                previousNetWorth={previousSnapshot ? convertFromEURTo(previousSnapshot.netWorthEUR, displayCurrency, conversionRates) : undefined}
+                previousAssets={previousSnapshot ? convertFromEURTo(previousSnapshot.totalAssetsEUR, displayCurrency, conversionRates) : undefined}
+                previousLiabilities={previousSnapshot ? convertFromEURTo(previousSnapshot.totalLiabilitiesEUR, displayCurrency, conversionRates) : undefined}
+              />
+            );
+          })()}
           
           {/* Liquid vs Total Net Worth */}
           <div className="mt-3 sm:mt-4 grid grid-cols-1 gap-2 sm:gap-3 sm:grid-cols-2">
