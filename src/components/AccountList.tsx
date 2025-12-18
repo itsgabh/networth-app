@@ -4,9 +4,10 @@ import { formatCurrency } from '@/lib/currency';
 import { ACCOUNT_CATEGORY_META } from '@/lib/accountMetadata';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Pencil, Trash2, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
@@ -14,6 +15,7 @@ interface AccountListProps {
   accounts: Account[];
   onEdit: (account: Account) => void;
   onDelete: (id: string) => void;
+  onQuickUpdate?: (id: string, balance: number) => void;
   showCurrentAssets?: boolean;
   showNonCurrentAssets?: boolean;
   showCurrentLiabilities?: boolean;
@@ -31,6 +33,7 @@ export const AccountList = ({
   accounts, 
   onEdit, 
   onDelete,
+  onQuickUpdate,
   showCurrentAssets = true,
   showNonCurrentAssets = true,
   showCurrentLiabilities = true,
@@ -42,12 +45,41 @@ export const AccountList = ({
     current_liability: true,
     non_current_liability: true,
   });
+  const [editingBalanceId, setEditingBalanceId] = useState<string | null>(null);
+  const [editingBalance, setEditingBalance] = useState<string>('');
   
   const toggleCategory = (category: AccountCategory) => {
     setOpenCategories(prev => ({
       ...prev,
       [category]: !prev[category]
     }));
+  };
+
+  const startEditingBalance = (account: Account) => {
+    setEditingBalanceId(account.id);
+    setEditingBalance(account.balance.toString());
+  };
+
+  const cancelEditingBalance = () => {
+    setEditingBalanceId(null);
+    setEditingBalance('');
+  };
+
+  const saveBalance = (accountId: string) => {
+    const newBalance = parseFloat(editingBalance);
+    if (!isNaN(newBalance) && onQuickUpdate) {
+      onQuickUpdate(accountId, newBalance);
+    }
+    setEditingBalanceId(null);
+    setEditingBalance('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, accountId: string) => {
+    if (e.key === 'Enter') {
+      saveBalance(accountId);
+    } else if (e.key === 'Escape') {
+      cancelEditingBalance();
+    }
   };
   
   const visibilityMap: Record<AccountCategory, boolean> = {
@@ -138,9 +170,42 @@ export const AccountList = ({
                           </div>
                           
                           <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
-                            <p className="text-base sm:text-lg font-semibold text-foreground flex-shrink-0">
-                              {formatCurrency(account.balance, account.currency)}
-                            </p>
+                            {editingBalanceId === account.id ? (
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  value={editingBalance}
+                                  onChange={(e) => setEditingBalance(e.target.value)}
+                                  onKeyDown={(e) => handleKeyDown(e, account.id)}
+                                  className="w-28 h-8 text-sm"
+                                  autoFocus
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => saveBalance(account.id)}
+                                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100 dark:hover:bg-green-900/20"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={cancelEditingBalance}
+                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => onQuickUpdate && startEditingBalance(account)}
+                                className="text-base sm:text-lg font-semibold text-foreground flex-shrink-0 hover:text-primary transition-colors cursor-pointer"
+                                title="Click to edit balance"
+                              >
+                                {formatCurrency(account.balance, account.currency)}
+                              </button>
+                            )}
                             
                             <div className="flex gap-1 sm:gap-2 flex-shrink-0">
                               <Button
