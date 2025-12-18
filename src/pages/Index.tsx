@@ -10,7 +10,9 @@ import { ImportPreviewDialog } from '@/components/ImportPreviewDialog';
 import { FinancialCharts } from '@/components/FinancialCharts';
 import { RetirementPlanning } from '@/components/RetirementPlanning';
 import { HistoryLog } from '@/components/HistoryLog';
+import { NetWorthHistoryChart } from '@/components/NetWorthHistoryChart';
 import { ViewToggles } from '@/components/ViewToggles';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CurrencySelector } from '@/components/CurrencySelector';
@@ -501,6 +503,7 @@ const Index = () => {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <ThemeToggle />
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border">
                 <span className="text-xs font-medium text-muted-foreground">Display:</span>
                 <CurrencySelector
@@ -677,6 +680,17 @@ const Index = () => {
             accounts={accounts}
             onEdit={handleEditAccount}
             onDelete={handleDeleteAccount}
+            onQuickUpdate={(id, balance) => {
+              setAccounts((prev) =>
+                prev.map((acc) =>
+                  acc.id === id ? { ...acc, balance, lastUpdated: new Date() } : acc
+                )
+              );
+              toast({
+                title: 'Balance updated',
+                description: 'Account balance has been updated.',
+              });
+            }}
             showCurrentAssets={showCurrentAssets}
             showNonCurrentAssets={showNonCurrentAssets}
             showCurrentLiabilities={showCurrentLiabilities}
@@ -695,6 +709,17 @@ const Index = () => {
               <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
               Add Your First Account
             </Button>
+          </div>
+        )}
+
+        {/* Net Worth History Chart */}
+        {history.length >= 2 && (
+          <div className="mt-8">
+            <NetWorthHistoryChart
+              snapshots={history}
+              displayCurrency={displayCurrency}
+              conversionRates={conversionRates}
+            />
           </div>
         )}
 
