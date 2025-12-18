@@ -7,6 +7,7 @@ import { AccountList } from '@/components/AccountList';
 import { AccountDialog } from '@/components/AccountDialog';
 import { ConversionRateDialog } from '@/components/ConversionRateDialog';
 import { ImportPreviewDialog } from '@/components/ImportPreviewDialog';
+import { YNABImportDialog, AccountMapping } from '@/components/YNABImportDialog';
 import { FinancialCharts } from '@/components/FinancialCharts';
 import { RetirementPlanning } from '@/components/RetirementPlanning';
 import { HistoryLog } from '@/components/HistoryLog';
@@ -17,11 +18,12 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CurrencySelector } from '@/components/CurrencySelector';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Wallet, RefreshCw, Save, Download, Upload, AlertTriangle, Undo2, Redo2 } from 'lucide-react';
+import { Plus, Wallet, RefreshCw, Save, Download, Upload, AlertTriangle, Undo2, Redo2, FileSpreadsheet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { defaultConversionRates } from '@/lib/currency';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
+import { parseYNABCSV, YNABParsedAccount, YNABParseResult } from '@/lib/ynabParser';
 
 const getRateToEUR = (currency: Currency, conversionRates: ConversionRate[]): number => {
   if (currency === 'EUR') return 1;
@@ -137,6 +139,8 @@ const Index = () => {
   const [importPreviewData, setImportPreviewData] = useState<any>(null);
   const [pendingImportData, setPendingImportData] = useState<any>(null);
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
+  const [ynabDialogOpen, setYnabDialogOpen] = useState(false);
+  const [ynabParsedData, setYnabParsedData] = useState<YNABParseResult | null>(null);
   const { toast } = useToast();
 
   // Keyboard shortcuts for undo/redo
@@ -537,16 +541,95 @@ const Index = () => {
     if (files.length === 0) return;
 
     const file = files[0];
+    if (file.name.endsWith('.csv')) {
+      processYNABFile(file);
+      return;
+    }
     if (!file.name.endsWith('.json')) {
       toast({
         title: 'Invalid file type',
-        description: 'Please upload a JSON backup file.',
+        description: 'Please upload a JSON backup file or YNAB CSV.',
         variant: 'destructive',
       });
       return;
     }
 
     processImportFile(file);
+  };
+
+  const processYNABFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const csvText = e.target?.result as string;
+        const result = parseYNABCSV(csvText);
+        setYnabParsedData(result);
+        setYnabDialogOpen(true);
+      } catch (error) {
+        toast({
+          title: 'YNAB Import Failed',
+          description: error instanceof Error ? error.message : 'Unable to parse YNAB CSV file.',
+          variant: 'destructive',
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleYNABImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    processYNABFile(file);
+    event.target.value = '';
+  };
+
+  const handleYNABImport = (mappings: AccountMapping[]) => {
+    let updatedCount = 0;
+    let createdCount = 0;
+
+    setAccounts((prev) => {
+      const newAccounts = [...prev];
+
+      for (const mapping of mappings) {
+        if (!mapping.include) continue;
+
+        if (mapping.matchType === 'exact' || (mapping.matchType === 'fuzzy' && mapping.selectedMatchId)) {
+          // Update existing account
+          const accountId = mapping.matchedAccount?.id || mapping.selectedMatchId;
+          const idx = newAccounts.findIndex((a) => a.id === accountId);
+          if (idx !== -1) {
+            newAccounts[idx] = {
+              ...newAccounts[idx],
+              balance: mapping.ynabAccount.balance,
+              lastUpdated: new Date(),
+            };
+            updatedCount++;
+          }
+        } else {
+          // Create new account
+          const newAccount: Account = {
+            id: crypto.randomUUID(),
+            name: mapping.ynabAccount.name,
+            category: mapping.category,
+            currency: mapping.currency,
+            balance: mapping.ynabAccount.balance,
+            accessType: mapping.accessType,
+            lastUpdated: new Date(),
+          };
+          newAccounts.push(newAccount);
+          createdCount++;
+        }
+      }
+
+      return newAccounts;
+    });
+
+    setYnabParsedData(null);
+    
+    toast({
+      title: 'YNAB Import Complete',
+      description: `Updated ${updatedCount} account(s), created ${createdCount} new account(s).`,
+    });
   };
 
   // Auto-save snapshot when accounts change significantly
@@ -707,13 +790,39 @@ const Index = () => {
                     <input
                       id="import-file"
                       type="file"
-                      accept=".json"
-                      onChange={handleImportData}
+                      accept=".json,.csv"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file?.name.endsWith('.csv')) {
+                          processYNABFile(file);
+                        } else {
+                          handleImportData(e);
+                        }
+                        e.target.value = '';
+                      }}
                       className="hidden"
                     />
                   </label>
                 </Button>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                asChild
+              >
+                <label htmlFor="ynab-import-file" className="cursor-pointer">
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Import from YNAB
+                  <input
+                    id="ynab-import-file"
+                    type="file"
+                    accept=".csv"
+                    onChange={handleYNABImportData}
+                    className="hidden"
+                  />
+                </label>
+              </Button>
             </div>
           </div>
         </div>
@@ -909,6 +1018,18 @@ const Index = () => {
           onConfirm={confirmImport}
           onCancel={cancelImport}
         />
+
+        {ynabParsedData && (
+          <YNABImportDialog
+            open={ynabDialogOpen}
+            onOpenChange={setYnabDialogOpen}
+            parsedAccounts={ynabParsedData.accounts}
+            existingAccounts={accounts}
+            defaultCurrency={displayCurrency}
+            format={ynabParsedData.format}
+            onImport={handleYNABImport}
+          />
+        )}
       </div>
     </div>
   );
