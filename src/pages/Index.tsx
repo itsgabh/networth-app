@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Account, Currency, NetWorthSummary, ConversionRate } from '@/types/finance';
 import { HistorySnapshot } from '@/types/history';
 import { RetirementInputs } from '@/types/retirement';
@@ -16,10 +16,12 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CurrencySelector } from '@/components/CurrencySelector';
-import { Plus, Wallet, RefreshCw, Save, Download, Upload, AlertTriangle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Plus, Wallet, RefreshCw, Save, Download, Upload, AlertTriangle, Undo2, Redo2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { defaultConversionRates } from '@/lib/currency';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useUndoRedo } from '@/hooks/useUndoRedo';
 
 const getRateToEUR = (currency: Currency, conversionRates: ConversionRate[]): number => {
   if (currency === 'EUR') return 1;
@@ -34,14 +36,23 @@ const convertFromEURTo = (amountEUR: number, targetCurrency: Currency, conversio
   return amountEUR / rate.rate;
 };
 
+// Undoable state type
+interface UndoableState {
+  accounts: Account[];
+  conversionRates: ConversionRate[];
+  history: HistorySnapshot[];
+  monthlyExpenses: number;
+}
+
 const Index = () => {
-  const [accounts, setAccounts] = useLocalStorage<Account[]>('networth-accounts', []);
-  const [conversionRates, setConversionRates] = useLocalStorage<ConversionRate[]>(
+  // Base localStorage state
+  const [storedAccounts, setStoredAccounts] = useLocalStorage<Account[]>('networth-accounts', []);
+  const [storedConversionRates, setStoredConversionRates] = useLocalStorage<ConversionRate[]>(
     'networth-rates',
     defaultConversionRates
   );
-  const [history, setHistory] = useLocalStorage<HistorySnapshot[]>('networth-history', []);
-  const [monthlyExpenses, setMonthlyExpenses] = useLocalStorage<number>('networth-expenses', 0);
+  const [storedHistory, setStoredHistory] = useLocalStorage<HistorySnapshot[]>('networth-history', []);
+  const [storedMonthlyExpenses, setStoredMonthlyExpenses] = useLocalStorage<number>('networth-expenses', 0);
   const [retirementInputs, setRetirementInputs] = useLocalStorage<RetirementInputs | undefined>(
     'retirement-inputs',
     undefined
@@ -51,6 +62,72 @@ const Index = () => {
   const [showCurrentLiabilities, setShowCurrentLiabilities] = useLocalStorage('show-current-liabilities', true);
   const [showNonCurrentLiabilities, setShowNonCurrentLiabilities] = useLocalStorage('show-non-current-liabilities', true);
   const [displayCurrency, setDisplayCurrency] = useLocalStorage<Currency>('display-currency', 'EUR');
+
+  // Undo/redo state
+  const {
+    state: undoableState,
+    setState: setUndoableState,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useUndoRedo<UndoableState>({
+    accounts: storedAccounts,
+    conversionRates: storedConversionRates,
+    history: storedHistory,
+    monthlyExpenses: storedMonthlyExpenses,
+  });
+
+  // Sync undoable state to localStorage
+  useEffect(() => {
+    if (JSON.stringify(undoableState.accounts) !== JSON.stringify(storedAccounts)) {
+      setStoredAccounts(undoableState.accounts);
+    }
+    if (JSON.stringify(undoableState.conversionRates) !== JSON.stringify(storedConversionRates)) {
+      setStoredConversionRates(undoableState.conversionRates);
+    }
+    if (JSON.stringify(undoableState.history) !== JSON.stringify(storedHistory)) {
+      setStoredHistory(undoableState.history);
+    }
+    if (undoableState.monthlyExpenses !== storedMonthlyExpenses) {
+      setStoredMonthlyExpenses(undoableState.monthlyExpenses);
+    }
+  }, [undoableState]);
+
+  // Convenience accessors
+  const accounts = undoableState.accounts;
+  const conversionRates = undoableState.conversionRates;
+  const history = undoableState.history;
+  const monthlyExpenses = undoableState.monthlyExpenses;
+
+  // Setters that work with undo/redo
+  const setAccounts = useCallback((updater: Account[] | ((prev: Account[]) => Account[])) => {
+    setUndoableState((prev) => ({
+      ...prev,
+      accounts: typeof updater === 'function' ? updater(prev.accounts) : updater,
+    }));
+  }, [setUndoableState]);
+
+  const setConversionRates = useCallback((updater: ConversionRate[] | ((prev: ConversionRate[]) => ConversionRate[])) => {
+    setUndoableState((prev) => ({
+      ...prev,
+      conversionRates: typeof updater === 'function' ? updater(prev.conversionRates) : updater,
+    }));
+  }, [setUndoableState]);
+
+  const setHistory = useCallback((updater: HistorySnapshot[] | ((prev: HistorySnapshot[]) => HistorySnapshot[])) => {
+    setUndoableState((prev) => ({
+      ...prev,
+      history: typeof updater === 'function' ? updater(prev.history) : updater,
+    }));
+  }, [setUndoableState]);
+
+  const setMonthlyExpenses = useCallback((updater: number | ((prev: number) => number)) => {
+    setUndoableState((prev) => ({
+      ...prev,
+      monthlyExpenses: typeof updater === 'function' ? updater(prev.monthlyExpenses) : updater,
+    }));
+  }, [setUndoableState]);
   
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<Account | null>(null);
@@ -61,6 +138,30 @@ const Index = () => {
   const [pendingImportData, setPendingImportData] = useState<any>(null);
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const { toast } = useToast();
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        if (e.shiftKey) {
+          e.preventDefault();
+          if (canRedo) {
+            redo();
+            toast({ title: 'Redo', description: 'Action redone' });
+          }
+        } else {
+          e.preventDefault();
+          if (canUndo) {
+            undo();
+            toast({ title: 'Undo', description: 'Action undone' });
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canUndo, canRedo, undo, redo, toast]);
 
   const summary: NetWorthSummary = useMemo(() => {
     const usedCurrencies = Array.from(new Set<Currency>(accounts.map(a => a.currency)));
@@ -504,6 +605,42 @@ const Index = () => {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <ThemeToggle />
+              <div className="flex items-center gap-1 border border-border rounded-lg">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        undo();
+                        toast({ title: 'Undo', description: 'Action undone' });
+                      }}
+                      disabled={!canUndo}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Undo2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        redo();
+                        toast({ title: 'Redo', description: 'Action redone' });
+                      }}
+                      disabled={!canRedo}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Redo2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Redo (Ctrl+Shift+Z)</TooltipContent>
+                </Tooltip>
+              </div>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border">
                 <span className="text-xs font-medium text-muted-foreground">Display:</span>
                 <CurrencySelector
